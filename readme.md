@@ -20,4 +20,7 @@ My AI Assistant is a simple tool designed to assist with various tasks, includin
     npm start
     ```
 
-3. **Interacting with the Assistant**: go to localhost:3000 to begin talking to the AI
+3. **Interacting with the Assistant**: Visit this link to chat with the AI
+    ```
+    htts://localhost:3000
+    ```
