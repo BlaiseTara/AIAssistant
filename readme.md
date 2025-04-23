@@ -6,8 +6,8 @@ My AI Assistant is a simple tool designed to assist with various tasks, includin
 ## Usage Instructions
 1. **Installation**: Clone the repository and ensure all dependencies are installed.
     ```bash
-    git clone https://github.com/YourRepo/MyAIAssistant.git
-    cd MyAIAssistant
+    git clone https://github.com/BlaiseTara/AIAssistant.git
+    cd AIAssistant
     npm install express http socket.io dotenv @google/generative-ai
     ```
     create a .env file and add this entry: 
