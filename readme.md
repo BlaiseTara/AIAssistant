@@ -22,5 +22,5 @@ My AI Assistant is a simple tool designed to assist with various tasks, includin
 
 3. **Interacting with the Assistant**: Visit this link to chat with the AI
     ```
-    htts://localhost:3000
+    http://localhost:3000
     ```
