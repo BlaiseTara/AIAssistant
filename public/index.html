@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+ <html lang="en">
+ 
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jarvis Chat</title>
+  <style>
+   body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f4f9;
+    color: #333;
+    padding: 20px;
+    max-width: 600px;
+    margin: auto;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+   }
+ 
+   h2 {
+    text-align: center;
+    color: #4CAF50;
+   }
+ 
+   #username-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 20vh;
+   }
+ 
+   #chat-screen {
+    display: none;
+    border: 1px solid #ddd;
+    background-color: #fff;
+    padding: 15px;
+    height: 400px;
+    overflow-y: auto;
+    border-radius: 8px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 15px;
+   }
+ 
+   #typing-indicator {
+    font-size: 0.8em;
+    color: #888;
+    font-style: italic;
+    margin-top: 5px;
+    height: 20px;
+   }
+ 
+   #input-container {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+   }
+ 
+   #username-input,
+   #input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-size: 16px;
+   }
+ 
+   #username-button {
+    background-color: #4CAF50;
+    color: white;
+    cursor: pointer;
+    flex: none;
+    width: auto;
+    padding: 10px;
+    font-size: 16px;
+    border: none;
+   }
+ 
+   .msg {
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 8px;
+    position: relative;
+    font-size: 14px;
+    line-height: 1.5;
+   }
+ 
+   .user {
+    font-weight: bold;
+    color: #007BFF;
+   }
+ 
+   .bot {
+    font-weight: bold;
+    color: #28A745;
+   }
+ 
+   .system {
+    font-style: italic;
+    color: #888;
+   }
+ 
+   .msg.user {
+    background-color: #e9f5ff;
+    text-align: left;
+   }
+ 
+   .msg.bot {
+    background-color: #e8f8e9;
+    text-align: left;
+   }
+ 
+   #chat-screen::-webkit-scrollbar {
+    width: 8px;
+   }
+ 
+   #chat-screen::-webkit-scrollbar-thumb {
+    background-color: #ccc;
+    border-radius: 4px;
+   }
+ 
+   #chat-screen::-webkit-scrollbar-thumb:hover {
+    background-color: #aaa;
+   }
+   
+   pre {
+      background-color: #f0f0f0;
+      padding: 10px;
+      overflow-x: auto; /* Enable horizontal scrolling for long code lines */
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      margin: 10px 0;
+    }
+
+    code {
+      font-family: 'Courier New', monospace;
+      color: #333;
+      display: block; /* Important for <pre> to work correctly */
+    }
+
+    /* Optional:  Style for inline code (if you want) */
+    :not(pre) > code {
+      background-color: #f0f0f0;
+      padding: 3px 5px;
+      border-radius: 3px;
+      font-size: 0.9em;
+    }
+  </style>
+ </head>
+ 
+ <body>
+  <div id="username-screen">
+   <h2>Enter Your Username</h2>
+   <input id="username-input" placeholder="Your name" />
+   <button id="username-button">Join Chat</button>
+  </div>
+ 
+  <div id="chat-screen">
+   <h2>Jarvis Chat</h2>
+   <div id="chat"></div>
+   <div id="typing-indicator"></div>
+   <div id="input-container">
+    <input id="input" placeholder="Say something..." oninput="handleInput()" onkeydown="handleKey(event)"
+     disabled />
+   </div>
+  </div>
+ 
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+   const usernameScreen = document.getElementById("username-screen");
+   const chatScreen = document.getElementById("chat-screen");
+   const usernameInput = document.getElementById("username-input");
+   const usernameButton = document.getElementById("username-button");
+   const chatDiv = document.getElementById("chat");
+   const inputBox = document.getElementById("input");
+   const typingIndicator = document.getElementById("typing-indicator");
+   let username = "";
+   const socket = io();
+   let history = [];
+   let currentBotMessageDiv = null;
+   let timeoutId;
+   const DEBOUNCE_DELAY = 300;
+ 
+   usernameButton.addEventListener('click', joinChat);
+   usernameInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+     joinChat();
+    }
+   });
+ 
+   function joinChat() {
+    username = usernameInput.value.trim();
+    if (username) {
+     socket.emit('join', { username: username });
+    } else {
+     alert("Please enter a username.");
+    }
+   }
+ 
+   socket.on('join_success', (data) => {
+    username = data.username;
+    usernameScreen.style.display = "none";
+    chatScreen.style.display = "block";
+    inputBox.disabled = false;
+    inputBox.focus();
+   });
+ 
+   socket.on('user joined', (data) => {
+    history.push({ sender: "system", text: `${data.username} joined the chat.` });
+    renderChat();
+   });
+ 
+   socket.on('user left', (data) => {
+    history.push({ sender: "system", text: `${data.username} left the chat.` });
+    renderChat();
+   });
+ 
+   socket.on('history', (chatHistory) => {
+    history = chatHistory;
+    renderChat();
+   });
+ 
+   socket.on('chat message', (data) => {
+    history.push(data);
+    const isScrolledToBottom = chatDiv.scrollHeight - chatDiv.clientHeight <= chatDiv.scrollTop + 1;  //  Check if at bottom
+    renderChat();
+    if (isScrolledToBottom) {
+     chatDiv.scrollTop = chatDiv.scrollHeight;  //  Scroll to bottom
+    }
+   });
+ 
+   socket.on('typing update', (data) => {
+    const { user, isTyping } = data;
+    typingIndicator.textContent = isTyping ? `${user} is typing...` : "";
+   });
+ 
+   socket.on('bot reply chunk', (data) => {
+    const text = data.text;
+    if (!currentBotMessageDiv) {
+     currentBotMessageDiv = document.createElement("div");
+     currentBotMessageDiv.className = "msg bot";
+     currentBotMessageDiv.textContent = "Jarvis: ";
+     chatDiv.appendChild(currentBotMessageDiv);
+     chatDiv.scrollTop = chatDiv.scrollHeight;
+    }
+    currentBotMessageDiv.textContent += text;
+    chatDiv.scrollTop = chatDiv.scrollHeight;
+   });
+ 
+   socket.on('disconnect', () => {
+    inputBox.disabled = true;
+    usernameScreen.style.display = "flex";
+    chatScreen.style.display = "none";
+    usernameInput.value = "";
+    username = "";
+    history.push({ sender: "system", text: "Disconnected from server." });
+    renderChat();
+   });
+ 
+   function renderChat() {
+    chatDiv.innerHTML = "";
+    history.forEach(entry => {
+      const msg = document.createElement("div");
+      msg.className = `msg ${entry.sender}`;
+      let senderName = entry.sender === "user" ? entry.user : entry.sender === "bot" ? "Jarvis" : "";
+      let textContent = entry.text;
+
+      //  Basic code formatting (crude, but works for simple cases)
+      if (entry.sender === "bot" && textContent.includes('```')) {
+        console.log("YES");
+      const parts = textContent.split('```');
+      textContent = parts.map((part, index) => {
+        if (index % 2 === 1) {  // Odd indices are code blocks
+        return `<pre><code>${part.trim()}</code></pre>`;
+        } else {
+        return part;
+        }
+      }).join('');
+      }
+
+      msg.innerHTML = senderName ? `<strong>${senderName}:</strong> ${textContent}` : textContent;  //  Use innerHTML
+      chatDiv.appendChild(msg);
+    });
+    //chatDiv.scrollTop = chatDiv.scrollHeight;
+    }
+ 
+   function sendMessage(message) {
+    if (username) {
+     socket.emit('chat message', message);
+     inputBox.value = "";
+     socket.emit('user typing', false);
+    }
+   }
+ 
+   function handleKey(event) {
+    if (event.key === "Enter" && username) {
+     const msg = inputBox.value.trim();
+     if (msg !== "") {
+      sendMessage(msg);
+     }
+    }
+   }
+ 
+   function handleInput() {
+    socket.emit('user typing', inputBox.value.trim() !== "");
+   }
+  </script>
+
+  <button id="go-to-workshop">Go to Workshop</button>
+  <script>
+  document.getElementById('go-to-workshop').addEventListener('click', function() {
+    window.location.href = '/workshop.html';
+  });
+  </script>
+ </body>
+ 
+ </html>

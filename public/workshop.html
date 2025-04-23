@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Workshop</title>
+ <style>
+  body {
+   font-family: 'Arial', sans-serif;
+   background-color: #f0f0f0;
+   margin: 0;
+   display: flex;
+   justify-content: center;
+   align-items: center;
+   height: 100vh;
+  }
+  .workshop-container {
+   background-color: #ffffff;
+   padding: 20px;
+   border-radius: 8px;
+   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+   text-align: center;
+  }
+  h1 {
+   color: #4CAF50;
+  }
+ </style>
+</head>
+<body>
+ <div class="workshop-container">
+  <h1>Welcome to the Workshop!</h1>
+  <p>This is where you can tune code and things</p>
+  <button id="back-to-chat">Back to Chat</button>
+ </div>
+ <script>
+  document.getElementById('back-to-chat').addEventListener('click', function() {
+   window.location.href = '/'; //  Go back to the main chat
+  });
+ </script>
+</body>
+</html>
